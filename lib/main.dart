@@ -2,20 +2,23 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:play/controller/socket_controller.dart';
 import 'package:play/controller/theme_comtroller.dart';
+import 'package:play/controller/video_controller.dart';
 import 'package:play/routes/route_constant.dart';
 import 'package:play/routes/routes.dart';
 import 'package:play/theme/theme.dart';
 
-
-
-void main() {
+void main() async {
   HttpOverrides.global = MyHttpOverrides();
+  WidgetsFlutterBinding.ensureInitialized();
+  Get.put(ReactiveSocketService());
+  await Get.putAsync<SocketService>(() async => SocketService().init());
+
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-
   final ThemeController themeController = Get.put(ThemeController());
 
   @override
@@ -35,7 +38,6 @@ class MyApp extends StatelessWidget {
     });
   }
 }
-
 
 class MyHttpOverrides extends HttpOverrides {
   @override

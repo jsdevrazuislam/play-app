@@ -2,21 +2,29 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:play/constant/font.dart';
+import 'package:play/routes/route_constant.dart';
 import 'package:play/widget/image.dart';
 
 class VideoCard extends StatelessWidget {
   final String thumbnail;
+  final String videoId;
+  final String videoUrl;
   final String title;
   final String avatar;
   final String username;
   final String duration;
+  final String channelId;
   const VideoCard(
       {Key? key,
       required this.avatar,
       required this.thumbnail,
+      required this.videoId,
       required this.title,
       required this.duration,
+      required this.channelId,
+      required this.videoUrl,
       required this.username})
       : super(key: key);
 
@@ -32,7 +40,14 @@ class VideoCard extends StatelessWidget {
               width: MediaQuery.of(context).size.width * 1,
               decoration:
                   BoxDecoration(borderRadius: BorderRadius.circular(5.r)),
-              child: AppImage(imageUrl: thumbnail),
+              child: GestureDetector(onTap: (){
+                Get.toNamed(RoutesName.videoDetails, arguments: {
+                  'videoId': videoId,
+                  'videoUrl':videoUrl,
+                  'channelId': channelId,
+                  'channelUserName': username,
+                });
+              },child: AppImage(imageUrl: thumbnail)),
             ),
             Positioned(
               bottom: 10.h,

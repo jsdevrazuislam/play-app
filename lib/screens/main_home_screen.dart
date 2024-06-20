@@ -87,6 +87,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                       thumbnail: video.thumbnail.toString(),
                       username: video.owner!.username.toString(),
                       duration: video.duration.toString(),
+                      videoId: video.sId.toString(),
+                      videoUrl: video.videoFile.toString(),
+                      channelId: video.owner!.sId.toString(),
                     ),
                     firstPageProgressIndicatorBuilder: (_) =>
                         const VideoShimmerEffect(),
