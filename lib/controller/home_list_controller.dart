@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:play/models/comments_model.dart';
 import 'package:play/models/video_model.dart';
 import 'package:http/http.dart' as http;
 
@@ -24,6 +25,29 @@ class VideoApi {
       }
     } catch (e) {
       print("Error while fetching videos $e");
+    }
+    return null;
+  }
+  static Future<List<Comments>?> getVideoComments(
+    int page,
+    int limit,
+    String videoId
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'http://localhost:3000/api/v1/comments/$videoId?'
+          'page=$page'
+          '&limit=$limit',
+        ),
+      );
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        final videoComments = jsonResponse['data'] as List;
+        return videoComments.map((json) => Comments.fromJson(json)).toList();
+      }
+    } catch (e) {
+      print("Error while fetching comments $e");
     }
     return null;
   }
