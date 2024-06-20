@@ -1,6 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:play/controller/home_list_controller.dart';
 import 'package:play/controller/socket_controller.dart';
+import 'package:play/models/comments_model.dart';
 import 'package:play/models/like_video_model.dart';
 import 'package:play/models/video_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +26,7 @@ class VideoController extends GetxController {
   final errorMessage = ''.obs;
   final totalChannelSubscribersCount = 0.obs;
   final comment = ''.obs;
+    final TextEditingController commentController = TextEditingController();
   final video = Video(
     sId: '',
     videoFile: '',
@@ -36,6 +41,7 @@ class VideoController extends GetxController {
     owner: Owner(sId: '', username: '', email: '', fullName: '', avatar: ''),
   ).obs;
   final likesVideos = <LikesVideo>[].obs;
+  final comments = <Comments>[].obs;
   final likeCount = 0.obs;
   final dislikeCount = 0.obs;
   final isLike = false.obs;
@@ -45,6 +51,39 @@ class VideoController extends GetxController {
   String? channelUserName;
   String? token;
   String? userId;
+  final int _pageSize = 4;
+  final PagingController<int, Comments> pagingController =
+      PagingController(firstPageKey: 1);
+
+  VideoController(){
+    pagingController.addPageRequestListener((pageKey) {
+      fetchPage(pageKey);
+    });
+  }
+
+  Future<void> fetchPage(int pageKey) async {
+    try {
+      // get api /beers list from pages
+      final newItems = await VideoApi.getVideoComments(pageKey, _pageSize, Get.arguments['videoId']);
+      // Check if it is last page
+      final isLastPage = newItems!.length < _pageSize;
+      // If it is last page then append
+      // last page else append new page
+      if (isLastPage) {
+        pagingController.appendLastPage(newItems);
+      } else {
+        // Appending new page when it is not last page
+        final nextPageKey = pageKey + 1;
+        pagingController.appendPage(newItems, nextPageKey);
+      }
+    }
+    // Handle error in catch
+    catch (error) {
+      final errorMessage = pagingController.error;
+      print("Fetching getCommentsList Error: $errorMessage");
+      pagingController.error = error;
+    }
+  }
 
   @override
   void onInit() async {
@@ -93,11 +132,9 @@ class VideoController extends GetxController {
     }
 
     service?.joinRoom(videoId.value);
-
     service?.addListener(SocketEventEnum.ADD_VIDEO_COMMENT, addVideoComment);
     service?.addListener(SocketEventEnum.ADDED_LIKE, addLike);
     service?.addListener(SocketEventEnum.ADDED_DISLIKE, addDislike);
-    print('working');
   }
 
   Future<void> fetchVideo(String videoId) async {
@@ -187,6 +224,33 @@ class VideoController extends GetxController {
       isLoading(false);
     }
   }
+  Future<void> createComment(String videoId) async {
+    isLoading(true);
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/v1/comments/$videoId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(<String, String>{
+          'content': comment.value,
+        }),
+      );
+      final responseJson = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        commentController.clear();
+        comment.value = '';
+        print('add comment Success');
+      } else {
+        print(responseJson);
+      }
+    } catch (e) {
+      errorMessage(e.toString());
+    } finally {
+      isLoading(false);
+    }
+  }
 
   Future<void> getLikedCount(String videoId) async {
     isLoading(true);
@@ -214,10 +278,7 @@ class VideoController extends GetxController {
 
   String getTimeAgo(String? createdAt) {
     if (createdAt == null) return 'Unknown';
-
     try {
-      print('createdAt: $createdAt'); // Log the createdAt value
-
       final createdAtDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSSZ")
           .parse(createdAt, true)
           .toLocal();
@@ -271,7 +332,9 @@ class VideoController extends GetxController {
   }
 
   void addVideoComment(dynamic data) {
-    print('Video comment added: $data');
+    final newComment = Comments.fromJson(data);
+    pagingController.itemList = [newComment, ...?pagingController.itemList];
+    comments.insert(0, newComment);
   }
 
   void addDislike(dynamic data) {
@@ -336,6 +399,7 @@ class VideoController extends GetxController {
   void onClose() {
     videoPlayerController.removeListener(_updatePosition);
     videoPlayerController.dispose();
+    pagingController.dispose();
     super.onClose();
     if (reactiveSocketService.socketService.value != null) {
       reactiveSocketService.socketService.value!
