@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:play/constant/font.dart';
 import 'package:play/controller/user_controller.dart';
 import 'package:play/controller/video_controller.dart';
-import 'package:play/models/comments_model.dart';
+import 'package:play/routes/route_constant.dart';
 import 'package:play/widget/app_bar.dart';
-import 'package:play/widget/comment.dart';
+import 'package:play/widget/comment_section.dart';
 import 'package:play/widget/image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:video_player/video_player.dart';
@@ -175,7 +174,9 @@ class VideoDetailsScreen extends StatelessWidget {
                   children: [
                     IconButton(
                         onPressed: () {
+                          if(userController.accessToken != '')
                           videoController.handleToggleLike(videoId, "like");
+                          else _dialogBuilder(context);
                         },
                         icon: Obx(() => Icon(
                             videoController.isLike.value
@@ -194,7 +195,9 @@ class VideoDetailsScreen extends StatelessWidget {
                             fontSize: 14.sp))),
                     IconButton(
                         onPressed: () {
+                          if(userController.accessToken != '')
                           videoController.handleToggleLike(videoId, "dislike");
+                           else _dialogBuilder(context);
                         },
                         icon: Obx(() => Icon(
                             videoController.isDislike.value
@@ -207,7 +210,8 @@ class VideoDetailsScreen extends StatelessWidget {
               /* 
               --------------------- Comments ---------------------------
             */
-              SizedBox(height: 15.h),
+              SizedBox(height: 20.h),
+            if(userController.accessToken.value != '')
               TextFormField(
                 keyboardType: TextInputType.text,
                 controller: videoController.commentController,
@@ -221,10 +225,9 @@ class VideoDetailsScreen extends StatelessWidget {
                       EdgeInsets.symmetric(vertical: 15.h, horizontal: 10.h),
                   filled: true,
                   hintText: 'Add Comment',
-                  enabled:
-                      userController.accessToken.value != '' ? true : false,
+                  enabled:  true,
                   suffixIcon: InkWell(
-                    child: Icon(Icons.send),
+                    child: const Icon(Icons.send),
                     onTap: () {
                       videoController.createComment(videoId);
                     },
@@ -247,26 +250,31 @@ class VideoDetailsScreen extends StatelessWidget {
                   videoController.comment.value = value;
                 },
               ),
-              SizedBox(height: 15.h),
+              SizedBox(height: 20.h),
               /* 
               --------------------- All Comments Render Here ---------------------------
             */
-              Expanded(
-                  child: PagedListView<int, Comments>(
-                pagingController: videoController.pagingController,
-                builderDelegate: PagedChildBuilderDelegate<Comments>(
-                  itemBuilder: (context, comment, index) => VideoComment(
-                    content: comment.content.toString(),
-                    avatar: comment.owner!.avatar.toString(),
-                  ),
-                  firstPageProgressIndicatorBuilder: (_) =>
-                      const Center(child: CircularProgressIndicator()),
-                  newPageProgressIndicatorBuilder: (_) =>
-                      const Center(child: CircularProgressIndicator()),
-                  noItemsFoundIndicatorBuilder: (_) =>
-                      const Center(child: Text('No comment found')),
-                ),
-              )),
+              Obx(() {
+                return videoController.comments.isEmpty
+                    ? Container(
+                        margin: EdgeInsets.only(top: 20.h),
+                        child: Center(
+                          child: Text(
+                            "No Comments Found",
+                            style: TextStyle(
+                              fontFamily: AppFonts.poppinsBold,
+                              fontSize: 16.sp,
+                            ),
+                          ),
+                        ),
+                      )
+                    : VideoCommentSection(
+                        content: videoController.comments[0].content
+                            .toString(),
+                        avatar: videoController.comments[0].owner!.avatar
+                            .toString(),
+                      );
+              })
             ],
           ),
         ),
@@ -315,8 +323,44 @@ Widget _buildVideoControls(VideoController videoController) {
   );
 }
 
+
+Future<void> _dialogBuilder(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sign In before to achieve this functionality'),
+          content: const Text(
+            'Sign in to make your opinion count.'
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Sign In'),
+              onPressed: () {
+                Get.offNamed(RoutesName.loginScreen);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 String _formatDuration(Duration duration) {
   final minutes = duration.inMinutes.toString().padLeft(2, '0');
   final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
   return '$minutes:$seconds';
 }
+ 

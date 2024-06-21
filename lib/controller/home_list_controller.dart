@@ -43,7 +43,7 @@ class VideoApi {
       );
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        final videoComments = jsonResponse['data'] as List;
+        final videoComments = jsonResponse['data']["comments"] as List;
         return videoComments.map((json) => Comments.fromJson(json)).toList();
       }
     } catch (e) {
