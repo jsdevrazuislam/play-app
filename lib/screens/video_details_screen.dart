@@ -12,11 +12,12 @@ import 'package:shimmer/shimmer.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoDetailsScreen extends StatelessWidget {
-  const VideoDetailsScreen({super.key});
+    final Map<String, dynamic> args;
+  const VideoDetailsScreen({Key? key, required this.args}) : super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> args = Get.arguments;
     final String videoId = args['videoId'];
     final String videoUrl = args['videoUrl'];
     final VideoController videoController = Get.put(VideoController());

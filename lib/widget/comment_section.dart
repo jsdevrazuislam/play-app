@@ -21,8 +21,8 @@ class VideoCommentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final VideoController videoController = Get.put(VideoController());
-    final Map<String, dynamic> args = Get.arguments;
 
     return Container(
       width: double.infinity,
@@ -34,7 +34,7 @@ class VideoCommentSection extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          _showBottomSheet(context, args);
+          _showBottomSheet(context);
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +83,7 @@ class VideoCommentSection extends StatelessWidget {
   }
 }
 
-void _showBottomSheet(BuildContext context, Map<String, dynamic> args) {
+void _showBottomSheet(BuildContext context) {
   final VideoController videoController = Get.put(VideoController());
   showModalBottomSheet(
       context: context,
