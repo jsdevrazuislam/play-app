@@ -41,7 +41,7 @@ class VideoCard extends StatelessWidget {
               decoration:
                   BoxDecoration(borderRadius: BorderRadius.circular(5.r)),
               child: GestureDetector(onTap: (){
-                Get.toNamed(RoutesName.videoDetails, arguments: {
+                Get.offNamed(RoutesName.videoDetails, arguments: {
                   'videoId': videoId,
                   'videoUrl':videoUrl,
                   'channelId': channelId,

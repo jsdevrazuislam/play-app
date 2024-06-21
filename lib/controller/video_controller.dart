@@ -25,8 +25,9 @@ class VideoController extends GetxController {
   final duration = Duration.zero.obs;
   final errorMessage = ''.obs;
   final totalChannelSubscribersCount = 0.obs;
+  final totalComments = 0.obs;
   final comment = ''.obs;
-    final TextEditingController commentController = TextEditingController();
+  final TextEditingController commentController = TextEditingController();
   final video = Video(
     sId: '',
     videoFile: '',
@@ -55,7 +56,7 @@ class VideoController extends GetxController {
   final PagingController<int, Comments> pagingController =
       PagingController(firstPageKey: 1);
 
-  VideoController(){
+  VideoController() {
     pagingController.addPageRequestListener((pageKey) {
       fetchPage(pageKey);
     });
@@ -64,7 +65,8 @@ class VideoController extends GetxController {
   Future<void> fetchPage(int pageKey) async {
     try {
       // get api /beers list from pages
-      final newItems = await VideoApi.getVideoComments(pageKey, _pageSize, Get.arguments['videoId']);
+      final newItems = await VideoApi.getVideoComments(
+          pageKey, _pageSize, videoId.value);
       // Check if it is last page
       final isLastPage = newItems!.length < _pageSize;
       // If it is last page then append
@@ -90,10 +92,12 @@ class VideoController extends GetxController {
     super.onInit();
     await _loadToken();
     videoId.value = Get.arguments['videoId'];
+    print('me run');
     channelUserName = Get.arguments['channelUserName'] as String?;
     if (videoId.value != '') {
       getLikedCount(videoId.value);
       fetchVideo(videoId.value);
+      getCommentsList(videoId.value);
       fetchSubscriber();
     }
     if (channelUserName != null) {
@@ -224,6 +228,7 @@ class VideoController extends GetxController {
       isLoading(false);
     }
   }
+
   Future<void> createComment(String videoId) async {
     isLoading(true);
     try {
@@ -242,6 +247,32 @@ class VideoController extends GetxController {
         commentController.clear();
         comment.value = '';
         print('add comment Success');
+      } else {
+        print(responseJson);
+      }
+    } catch (e) {
+      errorMessage(e.toString());
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> getCommentsList(String videoId) async {
+    isLoading(true);
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/api/v1/comments/$videoId?limit=1'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+      final responseJson = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final videoComments = responseJson['data']["comments"] as List;
+        totalComments.value = responseJson["data"]["totalComments"];
+        comments.value =
+            videoComments.map((json) => Comments.fromJson(json)).toList();
+        print('fetch comment Success');
       } else {
         print(responseJson);
       }

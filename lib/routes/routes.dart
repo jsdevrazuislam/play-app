@@ -11,5 +11,8 @@ final List<GetPage<dynamic>> getPages = [
   GetPage(name: RoutesName.homeScreen, page: () => const HomeScreen()),
   GetPage(name: RoutesName.loginScreen, page: () => const LoginScreen()),
   GetPage(name: RoutesName.signUpScreen, page: () => const SignUpScreen()),
-  GetPage(name: RoutesName.videoDetails, page: () => const VideoDetailsScreen()),
+  GetPage(
+    name: RoutesName.videoDetails,
+    page: () => VideoDetailsScreen(args: Get.arguments as Map<String, dynamic>),
+  ),
 ];
