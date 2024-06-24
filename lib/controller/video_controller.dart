@@ -65,8 +65,8 @@ class VideoController extends GetxController {
   Future<void> fetchPage(int pageKey) async {
     try {
       // get api /beers list from pages
-      final newItems = await VideoApi.getVideoComments(
-          pageKey, _pageSize, videoId.value);
+      final newItems =
+          await VideoApi.getVideoComments(pageKey, _pageSize, videoId.value);
       // Check if it is last page
       final isLastPage = newItems!.length < _pageSize;
       // If it is last page then append
@@ -137,8 +137,9 @@ class VideoController extends GetxController {
 
     service?.joinRoom(videoId.value);
     service?.addListener(SocketEventEnum.ADD_VIDEO_COMMENT, addVideoComment);
-    service?.addListener(SocketEventEnum.ADDED_LIKE, addLike);
-    service?.addListener(SocketEventEnum.ADDED_DISLIKE, addDislike);
+    service?.addListener(SocketEventEnum.ADDED_LIKE, handleReaction);
+    service?.addListener(SocketEventEnum.ADDED_DISLIKE, handleReaction);
+    service?.addListener(SocketEventEnum.REMOVE_REACTION, handleReaction);
   }
 
   Future<void> fetchVideo(String videoId) async {
@@ -363,13 +364,17 @@ class VideoController extends GetxController {
   }
 
   void addVideoComment(dynamic data) {
-    final newComment = Comments.fromJson(data);
+    final newComment = Comments.fromJson(data["comment"]);
+    totalComments.value = data["totalComments"];
     pagingController.itemList = [newComment, ...?pagingController.itemList];
     comments.insert(0, newComment);
   }
 
-  void addDislike(dynamic data) {
-    print('Dislike added');
+  void handleReaction(dynamic data) {
+    print({
+      'handle reaction data',
+      data
+    });
     final like = LikesVideo.fromJson(data['like']);
     final totalLike = data['totalLike'];
     final totalUnlike = data['totalUnlike'];
@@ -380,6 +385,7 @@ class VideoController extends GetxController {
 
     likeCount.value = totalLike;
     dislikeCount.value = totalUnlike;
+
 
     if (hasLikedVideo(like)) {
       isLike.value = true;
@@ -387,33 +393,14 @@ class VideoController extends GetxController {
     } else if (hasDislikedVideo(like)) {
       isDislike.value = true;
       isLike.value = false;
-    }
-  }
-
-  void addLike(dynamic data) {
-    print('like data');
-    final like = LikesVideo.fromJson(data['like']);
-    final totalLike = data['totalLike'];
-    final totalUnlike = data['totalUnlike'];
-
-    if (!likesVideos.any((v) => v.sId == like.sId)) {
-      likesVideos.insert(0, like);
-    }
-
-    likeCount.value = totalLike;
-    dislikeCount.value = totalUnlike;
-
-    if (hasLikedVideo(like)) {
-      isLike.value = true;
+    } else{
       isDislike.value = false;
-    } else if (hasDislikedVideo(like)) {
-      isDislike.value = true;
       isLike.value = false;
     }
   }
 
   bool hasLikedVideo(LikesVideo video) {
-    return video.likedBy!.any((likeUser) => likeUser.sId == userId);
+   return video.likedBy!.any((likeUser) => likeUser.sId == userId);
   }
 
   bool hasDislikedVideo(LikesVideo video) {
@@ -436,9 +423,11 @@ class VideoController extends GetxController {
       reactiveSocketService.socketService.value!
           .removeListener(SocketEventEnum.ADD_VIDEO_COMMENT, addVideoComment);
       reactiveSocketService.socketService.value!
-          .removeListener(SocketEventEnum.ADDED_LIKE, addLike);
+          .removeListener(SocketEventEnum.ADDED_LIKE, handleReaction);
       reactiveSocketService.socketService.value!
-          .removeListener(SocketEventEnum.ADDED_DISLIKE, addDislike);
+          .removeListener(SocketEventEnum.ADDED_DISLIKE, handleReaction);
+      reactiveSocketService.socketService.value!
+          .removeListener(SocketEventEnum.REMOVE_REACTION, handleReaction);
     }
   }
 }

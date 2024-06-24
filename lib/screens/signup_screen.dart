@@ -14,7 +14,6 @@ class SignUpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final LoginController loginController = Get.put(LoginController());
-    final _formkey = GlobalKey<FormState>();
 
     return Scaffold(
       appBar: AppBar(
@@ -49,7 +48,7 @@ class SignUpScreen extends StatelessWidget {
                 ---------------------------- Added Input Here ---------------------------
               */
               Form(
-                key: _formkey,
+                key: loginController.formkey,
                 child: Column(
                   children: [
                     AppInput(
@@ -144,9 +143,8 @@ class SignUpScreen extends StatelessWidget {
                     SizedBox(height: 20.h),
                     InkWell(
                       onTap: () {
-                        if (_formkey.currentState!.validate()) {
-                          loginController.register();
-                          _formkey.currentState!.reset();
+                        if (loginController.formkey.currentState!.validate()) {
+                            loginController.register();
                         }
                       },
                       child: Container(

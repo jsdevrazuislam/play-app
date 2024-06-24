@@ -17,6 +17,8 @@ class SocketEventEnum {
   static const String JOIN_DISLIKE = 'joinDislike';
   static const String ADDED_LIKE = 'addedLike';
   static const String ADDED_DISLIKE = 'addedDislike';
+  static const String REMOVE_REACTION = 'removeReaction';
+  static const String JOIN_VIDEO = 'joinVideo';
 }
 
 class SocketService extends GetxService {
@@ -55,9 +57,9 @@ late String token;
   }
 
   void joinRoom(String videoId) {
-    socket.emit(SocketEventEnum.JOIN_COMMENT, videoId);
-    socket.emit(SocketEventEnum.JOIN_LIKE, videoId);
-    socket.emit(SocketEventEnum.JOIN_DISLIKE, videoId);
+    socket.emit(SocketEventEnum.JOIN_VIDEO, videoId);
+    // socket.emit(SocketEventEnum.JOIN_LIKE, videoId);
+    // socket.emit(SocketEventEnum.JOIN_DISLIKE, videoId);
   }
 
   void addListener(String event, Function(dynamic) callback) {

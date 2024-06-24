@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -23,6 +24,7 @@ class LoginController extends GetxController {
   RxBool isAvatar = false.obs;
   RxBool isLoading = false.obs;
   final UserController userController = Get.put(UserController());
+  final formkey = GlobalKey<FormState>();
 
   void pickFile() async {
     try {
@@ -56,6 +58,7 @@ class LoginController extends GetxController {
       if (response.statusCode == 201) {
         Get.snackbar('Successfully', 'Register Complete');
         Get.offNamed(RoutesName.loginScreen);
+        formkey.currentState!.reset();
       } else {
         Get.snackbar('Error', responseJson['message']);
         isLoading.value = false;

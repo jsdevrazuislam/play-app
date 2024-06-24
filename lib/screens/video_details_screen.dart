@@ -12,9 +12,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoDetailsScreen extends StatelessWidget {
-    final Map<String, dynamic> args;
+  final Map<String, dynamic> args;
   const VideoDetailsScreen({Key? key, required this.args}) : super(key: key);
-
 
   @override
   Widget build(BuildContext context) {
@@ -175,9 +174,10 @@ class VideoDetailsScreen extends StatelessWidget {
                   children: [
                     IconButton(
                         onPressed: () {
-                          if(userController.accessToken != '')
-                          videoController.handleToggleLike(videoId, "like");
-                          else _dialogBuilder(context);
+                          if (userController.accessToken != '')
+                            videoController.handleToggleLike(videoId, "like");
+                          else
+                            _dialogBuilder(context);
                         },
                         icon: Obx(() => Icon(
                             videoController.isLike.value
@@ -196,9 +196,11 @@ class VideoDetailsScreen extends StatelessWidget {
                             fontSize: 14.sp))),
                     IconButton(
                         onPressed: () {
-                          if(userController.accessToken != '')
-                          videoController.handleToggleLike(videoId, "dislike");
-                           else _dialogBuilder(context);
+                          if (userController.accessToken != '')
+                            videoController.handleToggleLike(
+                                videoId, "dislike");
+                          else
+                            _dialogBuilder(context);
                         },
                         icon: Obx(() => Icon(
                             videoController.isDislike.value
@@ -212,45 +214,57 @@ class VideoDetailsScreen extends StatelessWidget {
               --------------------- Comments ---------------------------
             */
               SizedBox(height: 20.h),
-            if(userController.accessToken.value != '')
-              TextFormField(
-                keyboardType: TextInputType.text,
-                controller: videoController.commentController,
-                validator: (value) {
-                  if (value!.isEmpty) return 'Enter email';
-                },
-                decoration: InputDecoration(
-                  labelText: 'Add Comment',
-                  fillColor: Colors.black,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 15.h, horizontal: 10.h),
-                  filled: true,
-                  hintText: 'Add Comment',
-                  enabled:  true,
-                  suffixIcon: InkWell(
-                    child: const Icon(Icons.send),
-                    onTap: () {
-                      videoController.createComment(videoId);
-                    },
-                  ),
-                  border: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                      borderRadius: BorderRadius.all(Radius.circular(8))),
-                  focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blue),
-                      borderRadius: BorderRadius.all(Radius.circular(8))),
-                  errorBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red),
-                      borderRadius: BorderRadius.all(Radius.circular(8))),
-                  enabledBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                      borderRadius: BorderRadius.all(Radius.circular(8))),
-                ),
-                // obscureText: true,
-                onChanged: (value) {
-                  videoController.comment.value = value;
-                },
-              ),
+              Obx(() {
+                return userController.accessToken.value != ''
+                    ? TextFormField(
+                        keyboardType: TextInputType.text,
+                        controller: videoController.commentController,
+                        validator: (value) {
+                          if (value!.isEmpty) return 'Enter email';
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Add Comment',
+                          fillColor: Colors.black,
+                          contentPadding: EdgeInsets.symmetric(
+                              vertical: 15.h, horizontal: 10.h),
+                          filled: true,
+                          hintText: 'Add Comment',
+                          enabled: true,
+                          suffixIcon: InkWell(
+                            child: const Icon(Icons.send),
+                            onTap: () {
+                              videoController.createComment(videoId);
+                            },
+                          ),
+                          border: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8))),
+                          focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8))),
+                          errorBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.red),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8))),
+                          enabledBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8))),
+                        ),
+                        // obscureText: true,
+                        onChanged: (value) {
+                          videoController.comment.value = value;
+                        },
+                      )
+                    : Center(
+                      child: Text('Please login to post your comment', style: TextStyle(
+                        fontFamily: AppFonts.poppinsRegular,
+                        fontSize: 16.sp
+                      ),),
+                    );
+              }),
               SizedBox(height: 20.h),
               /* 
               --------------------- All Comments Render Here ---------------------------
@@ -270,8 +284,7 @@ class VideoDetailsScreen extends StatelessWidget {
                         ),
                       )
                     : VideoCommentSection(
-                        content: videoController.comments[0].content
-                            .toString(),
+                        content: videoController.comments[0].content.toString(),
                         avatar: videoController.comments[0].owner!.avatar
                             .toString(),
                       );
@@ -324,44 +337,40 @@ Widget _buildVideoControls(VideoController videoController) {
   );
 }
 
-
 Future<void> _dialogBuilder(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Sign In before to achieve this functionality'),
-          content: const Text(
-            'Sign in to make your opinion count.'
+  return showDialog<void>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Sign In before to achieve this functionality'),
+        content: const Text('Sign in to make your opinion count.'),
+        actions: <Widget>[
+          TextButton(
+            style: TextButton.styleFrom(
+              textStyle: Theme.of(context).textTheme.labelLarge,
+            ),
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
           ),
-          actions: <Widget>[
-            TextButton(
-              style: TextButton.styleFrom(
-                textStyle: Theme.of(context).textTheme.labelLarge,
-              ),
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+          TextButton(
+            style: TextButton.styleFrom(
+              textStyle: Theme.of(context).textTheme.labelLarge,
             ),
-            TextButton(
-              style: TextButton.styleFrom(
-                textStyle: Theme.of(context).textTheme.labelLarge,
-              ),
-              child: const Text('Sign In'),
-              onPressed: () {
-                Get.offNamed(RoutesName.loginScreen);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+            child: const Text('Sign In'),
+            onPressed: () {
+              Get.offNamed(RoutesName.loginScreen);
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 
 String _formatDuration(Duration duration) {
   final minutes = duration.inMinutes.toString().padLeft(2, '0');
   final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
   return '$minutes:$seconds';
 }
- 

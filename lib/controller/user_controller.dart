@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class UserController extends GetxController {
   RxString userId = ''.obs;
@@ -14,6 +17,27 @@ class UserController extends GetxController {
   void onInit() {
     super.onInit();
     loadUserData();
+  }
+
+  Future<void> logout() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/api/v1/users/logout'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer ${accessToken.value}',
+        },
+      );
+      final responseJson = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        Get.snackbar('Successful', 'Logout Successful');
+        clearUserData();
+      } else {
+        print(responseJson);
+      }
+    } catch (e) {
+      print("Error Message While logout $e");
+    }
   }
 
   Future<void> saveUserData(Map<String, dynamic> userData) async {
@@ -39,7 +63,6 @@ class UserController extends GetxController {
 
   Future<void> loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-
     userId.value = prefs.getString('userId') ?? '';
     username.value = prefs.getString('username') ?? '';
     email.value = prefs.getString('email') ?? '';

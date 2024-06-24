@@ -23,7 +23,9 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Row(
             children: [
               IconButton(
-                onPressed: () => {print('object')},
+                onPressed: () => {
+                  Get.offNamed(RoutesName.homeScreen)
+                },
                 icon: Icon(
                   Icons.search,
                   size: 25.w,
@@ -33,7 +35,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
                 return userController.accessToken.value != ''
                     ? GestureDetector(
                         onTap: () {
-                          print('avavtar click');
+                          userController.logout();
                         },
                         child: const CircleAvatar(
                           backgroundImage: NetworkImage(
