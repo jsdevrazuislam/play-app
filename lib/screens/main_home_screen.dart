@@ -8,16 +8,6 @@ import 'package:play/widget/app_bar.dart';
 import 'package:play/widget/loader/shimmer_effect_video.dart';
 import 'package:play/widget/video.dart';
 
-final lists = [
-  "All",
-  "Something",
-  "Javascript",
-  "Typescript",
-  "React.js",
-  "Next.js",
-  "English Tutorial"
-];
-
 class MainHomeScreen extends StatefulWidget {
   const MainHomeScreen({super.key});
 
@@ -42,12 +32,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
               */
               Container(
                 height: 25.h,
-                child: ListView.builder(
+                child: Obx((){
+                  return ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: lists.length,
+                  itemCount: listController.categories.length,
                   itemBuilder: (context, index) {
                     return GestureDetector(onTap: () {
-                      listController.changeSelectIndex(index);
+                      listController.changeSelectIndex(index, listController.categories[index].sId);
                     }, child: Obx(() {
                       return Container(
                         padding: EdgeInsets.symmetric(horizontal: 10.w),
@@ -59,7 +50,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                             borderRadius: BorderRadius.circular(20.r)),
                         child: Center(
                           child: Text(
-                            lists[index],
+                            listController.categories[index].content.toString(),
                             style: TextStyle(
                                 color: listController.selectedIndex != index
                                     ? Colors.white
@@ -71,7 +62,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                       );
                     }));
                   },
-                ),
+                );
+                }),
               ),
               SizedBox(height: 10.h),
               /* 
