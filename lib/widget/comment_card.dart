@@ -14,6 +14,9 @@ class CommentCard extends StatelessWidget {
   final String createdAt;
   final String avatar;
   final String id;
+  final int totalLikes;
+  final int totalDislikes;
+
 
   const CommentCard({
     Key? key,
@@ -21,7 +24,9 @@ class CommentCard extends StatelessWidget {
     required this.content,
     required this.createdAt,
     required this.username,
-    required this.id
+    required this.id,
+    required this.totalDislikes,
+    required this.totalLikes
   }) : super(key: key);
 
   @override
@@ -63,9 +68,9 @@ class CommentCard extends StatelessWidget {
                 Row(
                   children: [
                     IconButton(icon: Icon(Icons.thumb_up_alt_outlined, size: 18.sp), onPressed: (){},),
-                    Text('200', style: TextStyle(fontFamily: AppFonts.poppinsRegular)),
+                    Text(totalLikes.toString(), style: TextStyle(fontFamily: AppFonts.poppinsRegular)),
                     SizedBox(width: 10.w),
-                    Text('200', style: TextStyle(fontFamily: AppFonts.poppinsRegular)),
+                    Text(totalDislikes.toString(), style: TextStyle(fontFamily: AppFonts.poppinsRegular)),
                     IconButton(icon: Icon(Icons.thumb_down_alt_outlined, size: 18.sp), onPressed: (){},),
                     if(userController.userId == id)
                     IconButton(icon: Icon(Icons.delete, size: 18.sp, color: Colors.red), onPressed: (){},),

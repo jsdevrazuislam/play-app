@@ -7,6 +7,7 @@ import 'package:play/controller/home_list_controller.dart';
 import 'package:play/widget/app_bar.dart';
 import 'package:play/widget/loader/shimmer_effect_video.dart';
 import 'package:play/widget/video.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MainHomeScreen extends StatefulWidget {
   const MainHomeScreen({super.key});
@@ -35,9 +36,19 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 child: Obx((){
                   return ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: listController.categories.length,
+                  itemCount: listController.isLoading.value ? 10 : listController.categories.length,
                   itemBuilder: (context, index) {
-                    return GestureDetector(onTap: () {
+                    return listController.isLoading.value ? Shimmer.fromColors(
+                        baseColor: Colors.grey[500]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(
+                          height: 20.h,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5.r),
+                            color: Colors.white,
+                          ),
+                        ),
+                      ) : GestureDetector(onTap: () {
                       listController.changeSelectIndex(index, listController.categories[index].sId);
                     }, child: Obx(() {
                       return Container(

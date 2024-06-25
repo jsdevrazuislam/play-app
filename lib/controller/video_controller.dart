@@ -42,8 +42,11 @@ class VideoController extends GetxController {
     owner: Owner(sId: '', username: '', email: '', fullName: '', avatar: ''),
   ).obs;
   final likesVideos = <LikesVideo>[].obs;
+  final likesComments = <LikesVideo>[].obs;
   final comments = <Comments>[].obs;
   final likeCount = 0.obs;
+  final commentDislikeCount = 0.obs;
+  final commentLikeCount = 0.obs;
   final dislikeCount = 0.obs;
   final isLike = false.obs;
   final isDislike = false.obs;
@@ -55,6 +58,8 @@ class VideoController extends GetxController {
   final int _pageSize = 4;
   final PagingController<int, Comments> pagingController =
       PagingController(firstPageKey: 1);
+final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
+
 
   VideoController() {
     pagingController.addPageRequestListener((pageKey) {
@@ -126,6 +131,17 @@ class VideoController extends GetxController {
               })
             });
   }
+
+  void fetchCommentLikes(String commentId) async {
+    if (commentLikesCache.containsKey(commentId)) {
+      return;
+    }
+    final likesData = await VideoApi.getCommentsLikeDislike(commentId);
+    if (likesData != null) {
+      commentLikesCache[commentId] = likesData;
+    }
+  }
+
 
   void setupSocketListeners() {
     final service = reactiveSocketService.socketService.value;
@@ -308,6 +324,30 @@ class VideoController extends GetxController {
     }
   }
 
+  Future<void> getLikeCountForComment(String commentId) async {
+    isLoading(true);
+    try {
+      final response = await http.get(
+          Uri.parse('http://localhost:3000/api/v1/likes/comment/$commentId'));
+      final responseJson = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final likesCommentsData = responseJson['data']["likesComments"] as List;
+        final totalLikeComment = responseJson['data']['totalLikes'];
+        final totalUnlikeComment = responseJson['data']['totalDislikes'];
+        likesComments.value =
+            likesCommentsData.map((json) => LikesVideo.fromJson(json)).toList();
+        commentLikeCount.value = totalLikeComment;
+        commentDislikeCount.value = totalUnlikeComment;
+      } else {
+        print(responseJson);
+      }
+    } catch (e) {
+      errorMessage(e.toString());
+    } finally {
+      isLoading(false);
+    }
+  }
+
   String getTimeAgo(String? createdAt) {
     if (createdAt == null) return 'Unknown';
     try {
@@ -371,10 +411,7 @@ class VideoController extends GetxController {
   }
 
   void handleReaction(dynamic data) {
-    print({
-      'handle reaction data',
-      data
-    });
+    print({'handle reaction data', data});
     final like = LikesVideo.fromJson(data['like']);
     final totalLike = data['totalLike'];
     final totalUnlike = data['totalUnlike'];
@@ -386,21 +423,20 @@ class VideoController extends GetxController {
     likeCount.value = totalLike;
     dislikeCount.value = totalUnlike;
 
-
     if (hasLikedVideo(like)) {
       isLike.value = true;
       isDislike.value = false;
     } else if (hasDislikedVideo(like)) {
       isDislike.value = true;
       isLike.value = false;
-    } else{
+    } else {
       isDislike.value = false;
       isLike.value = false;
     }
   }
 
   bool hasLikedVideo(LikesVideo video) {
-   return video.likedBy!.any((likeUser) => likeUser.sId == userId);
+    return video.likedBy!.any((likeUser) => likeUser.sId == userId);
   }
 
   bool hasDislikedVideo(LikesVideo video) {

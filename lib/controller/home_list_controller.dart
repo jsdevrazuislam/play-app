@@ -4,15 +4,13 @@ import 'package:get/get_rx/get_rx.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:play/models/category.model.dart';
 import 'package:play/models/comments_model.dart';
+import 'package:play/models/like_video_model.dart';
 import 'package:play/models/video_model.dart';
 import 'package:http/http.dart' as http;
 
 class VideoApi {
   static Future<List<dynamic>?> getVideoList(
-    int page,
-    int limit,
-    String category
-  ) async {
+      int page, int limit, String category) async {
     try {
       final uri = Uri.parse(
         'http://localhost:3000/api/v1/videos?'
@@ -52,6 +50,27 @@ class VideoApi {
     }
     return null;
   }
+
+  static Future<Map<String, dynamic>?> getCommentsLikeDislike(
+      String commentId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/api/v1/likes/comment/$commentId'),
+      );
+      if (response.statusCode == 200) {
+        final responseJson = json.decode(response.body);
+        final totalLikeComment = responseJson['data']['totalLikes'];
+        final totalUnlikeComment = responseJson['data']['totalDislikes'];
+        return {
+          'totalLike': totalLikeComment,
+          'totalDislike': totalUnlikeComment
+        };
+      }
+    } catch (e) {
+      print("Error while fetching comments $e");
+    }
+    return null;
+  }
 }
 
 class HomeListController extends GetxController {
@@ -71,19 +90,16 @@ class HomeListController extends GetxController {
   }
 
   @override
-  void onInit(){
+  void onInit() {
     super.onInit();
     getCategories();
   }
 
-@override
-void onReady(){
-  super.onReady();
-  ever(selectCategory, (callback) => {
-    pagingController.refresh()
-  });
-}
-
+  @override
+  void onReady() {
+    super.onReady();
+    ever(selectCategory, (callback) => {pagingController.refresh()});
+  }
 
   @override
   void onClose() {
@@ -94,7 +110,8 @@ void onReady(){
   Future<void> fetchPage(int pageKey) async {
     try {
       // get api /beers list from pages
-      final newItems = await VideoApi.getVideoList(pageKey, _pageSize, selectCategory.value);
+      final newItems =
+          await VideoApi.getVideoList(pageKey, _pageSize, selectCategory.value);
       // Check if it is last page
       final isLastPage = newItems!.length < _pageSize;
       // If it is last page then append
@@ -132,6 +149,8 @@ void onReady(){
       }
     } catch (e) {
       print("Error while geting category");
+    } finally {
+      isLoading(false);
     }
   }
 

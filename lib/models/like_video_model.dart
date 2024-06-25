@@ -27,6 +27,19 @@ class LikeVideo {
   }
 }
 
+
+class CommentWithCount {
+  LikeVideo? data;
+  int? totalLike;
+  int? totalDislike;
+
+  CommentWithCount({
+    this.data,
+    this.totalDislike,
+    this.totalLike
+  });
+}
+
 class LikesVideo {
   String? sId;
   String? video;
