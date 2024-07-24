@@ -165,10 +165,10 @@ class VideoController extends GetxController {
     }
 
     service?.joinRoom(videoId.value);
-    service?.joinRoom(video.value.owner!.sId.toString());
     service?.addListener(SocketEventEnum.ADD_VIDEO_COMMENT, addVideoComment);
     service?.addListener(SocketEventEnum.COMMENT_LIKE, handleCommentReaction);
     service?.addListener(SocketEventEnum.ADD_SUBSCRIBER, handleSubscriber);
+    service?.addListener(SocketEventEnum.REMOVE_SUBSCRIBER, handleSubscriber);
     service?.addListener(
         SocketEventEnum.COMMENT_DISLIKE, handleCommentReaction);
     service?.addListener(SocketEventEnum.ADDED_LIKE, handleReaction);
@@ -186,6 +186,7 @@ class VideoController extends GetxController {
       );
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
+        print({"object", response.body});
         video.value = Video.fromJson(jsonData['data']);
       } else {
         errorMessage('Failed to load video');
@@ -240,7 +241,7 @@ class VideoController extends GetxController {
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
         totalChannelSubscribersCount.value =
-            jsonData['data']['totalChannelSubscribersCount'];
+            jsonData['data']['totalSubscribedCount'];
             isSubscribed.value = jsonData['data']['isSubscribed'];
       } else {
         errorMessage('Failed to load fetch subscriber');
@@ -252,11 +253,11 @@ class VideoController extends GetxController {
     }
   }
 
-  Future<void> toggleSubscriber(channelId) async {
+  Future<void> toggleSubscriber(channelId, videoId) async {
     isLoading(true);
     try {
       final response = await http.post(
-          Uri.parse('http://localhost:3000/api/v1/subscriptions/c/$channelId'),
+          Uri.parse('http://localhost:3000/api/v1/subscriptions/c/$channelId/$videoId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
             'Authorization': 'Bearer $token',
@@ -264,7 +265,6 @@ class VideoController extends GetxController {
 
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
-        print({"jsonData", response.body});
         totalChannelSubscribersCount.value =
             jsonData['data']['totalChannelSubscribersCount'];
         isSubscribed.value = jsonData['data']['isSubscribed'];
@@ -521,6 +521,7 @@ class VideoController extends GetxController {
   }
 
   void handleSubscriber(dynamic data) {
+    print({"object", data});
     totalChannelSubscribersCount.value = data['totalChannelSubscribersCount'];
     isSubscribed.value = data['isSubscribed'];
   }
@@ -598,6 +599,8 @@ class VideoController extends GetxController {
           .removeListener(SocketEventEnum.REMOVE_REACTION, handleReaction);
       reactiveSocketService.socketService.value!
           .removeListener(SocketEventEnum.ADD_SUBSCRIBER, handleSubscriber);
+      reactiveSocketService.socketService.value!
+          .removeListener(SocketEventEnum.REMOVE_SUBSCRIBER, handleSubscriber);
       reactiveSocketService.socketService.value!
           .removeListener(SocketEventEnum.COMMENT_LIKE, handleCommentReaction);
       reactiveSocketService.socketService.value!.removeListener(

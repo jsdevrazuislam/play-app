@@ -64,7 +64,6 @@ late String token;
 
   void joinRoom(String videoId) {
     socket.emit(SocketEventEnum.JOIN_VIDEO, videoId);
-    socket.emit(SocketEventEnum.JOIN_CHANNEL, videoId);
   }
 
   void addListener(String event, Function(dynamic) callback) {
