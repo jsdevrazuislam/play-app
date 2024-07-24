@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:play/constant/font.dart';
-import 'package:play/controller/home_list_controller.dart';
 import 'package:play/controller/video_controller.dart';
 import 'package:play/models/comments_model.dart';
 import 'package:play/widget/comment_card.dart';
@@ -121,24 +120,19 @@ void _showBottomSheet(BuildContext context) {
                   pagingController: videoController.pagingController,
                   builderDelegate: PagedChildBuilderDelegate<Comments>(
                     itemBuilder: (context, comment, index) {
-                      videoController
-                          .fetchCommentLikes(comment.sId.toString());
-
-                      return Obx(() {
-                        final likesData = videoController
-                            .commentLikesCache[comment.sId.toString()];
-
-                            print("likesData from comment");
-                        return CommentCard(
-                          username: comment.owner!.username.toString(),
-                          avatar: comment.owner!.avatar.toString(),
-                          content: comment.content.toString(),
-                          createdAt: comment.createdAt.toString(),
-                          id: comment.owner!.sId.toString(),
-                          totalLikes: likesData?['totalLike'] ?? 0,
-                          totalDislikes: likesData?['totalDislike'] ?? 0,
-                        );
-                      });
+                      if (!videoController.commentLikesCache
+                          .containsKey(comment.sId.toString())) {
+                        videoController
+                            .fetchCommentLikes(comment.sId.toString());
+                      }
+                      return CommentCard(
+                        username: comment.owner!.username.toString(),
+                        avatar: comment.owner!.avatar.toString(),
+                        content: comment.content.toString(),
+                        createdAt: comment.createdAt.toString(),
+                        id: comment.owner!.sId.toString(),
+                        commentId: comment.sId.toString(),
+                      );
                     },
                     firstPageProgressIndicatorBuilder: (_) =>
                         const Center(child: CircularProgressIndicator()),

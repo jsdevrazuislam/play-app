@@ -41,7 +41,8 @@ class VideoDetailsScreen extends StatelessWidget {
                       style: TextStyle(color: Colors.red));
                 }
                 return videoController.isInitialized.value
-                    ? Column(
+                    ? Stack(
+                        alignment: Alignment.topRight,
                         children: [
                           Container(
                             height: 170.h,
@@ -68,7 +69,12 @@ class VideoDetailsScreen extends StatelessWidget {
                                             .toString()),
                                   ),
                           ),
-                          _buildVideoControls(videoController),
+                          Positioned(
+                            bottom: 0.0,
+                            width: MediaQuery.of(context).size.width * 1,
+                            child: _buildVideoControls(
+                                videoController, context), //Icon
+                          ),
                         ],
                       )
                     : Shimmer.fromColors(
@@ -86,6 +92,7 @@ class VideoDetailsScreen extends StatelessWidget {
               /* 
               --------------------- Video Details ---------------------------
             */
+              SizedBox(height: 10.h),
               Obx(() {
                 return Text(
                   videoController.video.value.title.toString(),
@@ -157,7 +164,14 @@ class VideoDetailsScreen extends StatelessWidget {
                       }),
                     ],
                   ),
-                  ElevatedButton(onPressed: () {}, child: Text("Subscribe")),
+                  ElevatedButton(
+                      onPressed: () {
+                        videoController.toggleSubscriber(
+                            videoController.video.value.owner?.sId);
+                      },
+                      child: Obx(() => Text(
+                        videoController.isSubscribed.value ? 'Unsubscribe' : 'Subscribe'
+                      ))),
                 ],
               ),
               SizedBox(height: 10.h),
@@ -196,11 +210,12 @@ class VideoDetailsScreen extends StatelessWidget {
                             fontSize: 14.sp))),
                     IconButton(
                         onPressed: () {
-                          if (userController.accessToken != '')
+                          if (userController.accessToken != '') {
                             videoController.handleToggleLike(
                                 videoId, "dislike");
-                          else
+                          } else {
                             _dialogBuilder(context);
+                          }
                         },
                         icon: Obx(() => Icon(
                             videoController.isDislike.value
@@ -259,11 +274,13 @@ class VideoDetailsScreen extends StatelessWidget {
                         },
                       )
                     : Center(
-                      child: Text('Please login to post your comment', style: TextStyle(
-                        fontFamily: AppFonts.poppinsRegular,
-                        fontSize: 16.sp
-                      ),),
-                    );
+                        child: Text(
+                          'Please login to post your comment',
+                          style: TextStyle(
+                              fontFamily: AppFonts.poppinsRegular,
+                              fontSize: 16.sp),
+                        ),
+                      );
               }),
               SizedBox(height: 20.h),
               /* 
@@ -297,11 +314,33 @@ class VideoDetailsScreen extends StatelessWidget {
   }
 }
 
-Widget _buildVideoControls(VideoController videoController) {
+Widget _buildVideoControls(
+    VideoController videoController, BuildContext context) {
   return Column(
     mainAxisAlignment: MainAxisAlignment.start,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
+      Obx(() {
+        return Container(
+          padding: EdgeInsets.zero,
+          height: 5.h,
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+                trackHeight: 5.h,
+                thumbColor: Colors.transparent,
+                thumbShape: RoundSliderThumbShape(enabledThumbRadius: 0.0)),
+            child: Slider(
+              value: videoController.position.value.inSeconds.toDouble(),
+              max: videoController.duration.value.inSeconds.toDouble(),
+              activeColor: Colors.red,
+              onChanged: (value) {
+                videoController.videoPlayerController
+                    .seekTo(Duration(seconds: value.toInt()));
+              },
+            ),
+          ),
+        );
+      }),
       Obx(() {
         final position = videoController.position.value;
         final duration = videoController.duration.value;
@@ -321,16 +360,6 @@ Widget _buildVideoControls(VideoController videoController) {
               );
             }),
           ],
-        );
-      }),
-      Obx(() {
-        return Slider(
-          value: videoController.position.value.inSeconds.toDouble(),
-          max: videoController.duration.value.inSeconds.toDouble(),
-          onChanged: (value) {
-            videoController.videoPlayerController
-                .seekTo(Duration(seconds: value.toInt()));
-          },
         );
       }),
     ],

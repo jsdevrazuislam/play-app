@@ -45,12 +45,14 @@ class VideoController extends GetxController {
   final likesComments = <LikesVideo>[].obs;
   final comments = <Comments>[].obs;
   final likeCount = 0.obs;
-  final commentDislikeCount = 0.obs;
-  final commentLikeCount = 0.obs;
+  final isSubscribed = false.obs;
   final dislikeCount = 0.obs;
   final isLike = false.obs;
+  final isLikeComment = false.obs;
   final isDislike = false.obs;
+  final isDislikeComment = false.obs;
   final videoId = ''.obs;
+  final commentId = ''.obs;
   final reactiveSocketService = Get.find<ReactiveSocketService>();
   String? channelUserName;
   String? token;
@@ -58,8 +60,7 @@ class VideoController extends GetxController {
   final int _pageSize = 4;
   final PagingController<int, Comments> pagingController =
       PagingController(firstPageKey: 1);
-final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
-
+  final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
 
   VideoController() {
     pagingController.addPageRequestListener((pageKey) {
@@ -130,6 +131,19 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
                 }
               })
             });
+    ever(
+        likesComments,
+        (callback) => {
+              likesComments.forEach((video) {
+                if (hasLikedVideo(video)) {
+                  isLikeComment.value = true;
+                  isDislikeComment.value = false;
+                } else if (hasDislikedVideo(video)) {
+                  isDislikeComment.value = true;
+                  isLikeComment.value = false;
+                }
+              })
+            });
   }
 
   void fetchCommentLikes(String commentId) async {
@@ -142,7 +156,6 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
     }
   }
 
-
   void setupSocketListeners() {
     final service = reactiveSocketService.socketService.value;
     if (reactiveSocketService.socketService.value == null ||
@@ -152,10 +165,17 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
     }
 
     service?.joinRoom(videoId.value);
+    service?.joinRoom(video.value.owner!.sId.toString());
     service?.addListener(SocketEventEnum.ADD_VIDEO_COMMENT, addVideoComment);
+    service?.addListener(SocketEventEnum.COMMENT_LIKE, handleCommentReaction);
+    service?.addListener(SocketEventEnum.ADD_SUBSCRIBER, handleSubscriber);
+    service?.addListener(
+        SocketEventEnum.COMMENT_DISLIKE, handleCommentReaction);
     service?.addListener(SocketEventEnum.ADDED_LIKE, handleReaction);
     service?.addListener(SocketEventEnum.ADDED_DISLIKE, handleReaction);
     service?.addListener(SocketEventEnum.REMOVE_REACTION, handleReaction);
+    service?.addListener(
+        SocketEventEnum.REMOVE_COMMENT_REACTION, handleCommentReaction);
   }
 
   Future<void> fetchVideo(String videoId) async {
@@ -177,18 +197,51 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
     }
   }
 
+  Future<void> deleteComment(String commentId) async {
+    isLoading(true);
+    try {
+      final response = await http.delete(
+        Uri.parse('http://localhost:3000/api/v1/comments/c/$commentId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      final responseJson = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        totalComments.value = responseJson["data"];
+        commentLikesCache.remove(commentId);
+        pagingController.itemList
+            ?.removeWhere((comment) => comment.sId == commentId);
+        comments.removeWhere((comment) => comment.sId == commentId);
+        pagingController.notifyListeners();
+      } else {
+        print(responseJson);
+      }
+    } catch (e) {
+      errorMessage(e.toString());
+    } finally {
+      isLoading(false);
+    }
+  }
+
   Future<void> fetchSubscriber() async {
     isLoading(true);
     try {
       final response = await http.get(
         Uri.parse(
             'http://localhost:3000/api/v1/users/get-user-channel/$channelUserName'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
       );
 
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
         totalChannelSubscribersCount.value =
             jsonData['data']['totalChannelSubscribersCount'];
+            isSubscribed.value = jsonData['data']['isSubscribed'];
       } else {
         errorMessage('Failed to load fetch subscriber');
       }
@@ -202,14 +255,19 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
   Future<void> toggleSubscriber(channelId) async {
     isLoading(true);
     try {
-      final response = await http.get(
-        Uri.parse('http://localhost:3000/api/v1/subscriptions/c/$channelId'),
-      );
+      final response = await http.post(
+          Uri.parse('http://localhost:3000/api/v1/subscriptions/c/$channelId'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Authorization': 'Bearer $token',
+          });
 
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
+        print({"jsonData", response.body});
         totalChannelSubscribersCount.value =
             jsonData['data']['totalChannelSubscribersCount'];
+        isSubscribed.value = jsonData['data']['isSubscribed'];
       } else {
         errorMessage('Failed to load fetch subscriber');
       }
@@ -264,6 +322,33 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
         commentController.clear();
         comment.value = '';
         print('add comment Success');
+      } else {
+        print(responseJson);
+      }
+    } catch (e) {
+      errorMessage(e.toString());
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> toggleLikeComment(String commentId, String reaction) async {
+    isLoading(true);
+    try {
+      final response = await http.post(
+        Uri.parse(
+            'http://localhost:3000/api/v1/likes/toggle/c/${videoId.value}/$commentId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(<String, String>{
+          'reaction': reaction,
+        }),
+      );
+      final responseJson = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        print({"toggleLikeComment"});
       } else {
         print(responseJson);
       }
@@ -336,8 +421,10 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
         final totalUnlikeComment = responseJson['data']['totalDislikes'];
         likesComments.value =
             likesCommentsData.map((json) => LikesVideo.fromJson(json)).toList();
-        commentLikeCount.value = totalLikeComment;
-        commentDislikeCount.value = totalUnlikeComment;
+        commentLikesCache[commentId] = {
+          'totalLike': totalLikeComment,
+          'totalDislike': totalUnlikeComment,
+        };
       } else {
         print(responseJson);
       }
@@ -403,11 +490,39 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
     }
   }
 
+  void handleCommentReaction(dynamic data) {
+    print({'handle comment reaction data'});
+    final like = LikesVideo.fromJson(data['like']);
+    final totalLike = data['totalLike'];
+    final totalUnlike = data['totalUnlike'];
+
+    commentLikesCache[data["like"]["comment"]] = {
+      'totalLike': totalLike,
+      'totalDislike': totalUnlike,
+    };
+
+    if (hasLikedVideo(like)) {
+      isLikeComment.value = true;
+      isDislikeComment.value = false;
+    } else if (hasDislikedVideo(like)) {
+      isDislikeComment.value = true;
+      isLikeComment.value = false;
+    } else {
+      isDislikeComment.value = false;
+      isLikeComment.value = false;
+    }
+  }
+
   void addVideoComment(dynamic data) {
     final newComment = Comments.fromJson(data["comment"]);
     totalComments.value = data["totalComments"];
     pagingController.itemList = [newComment, ...?pagingController.itemList];
     comments.insert(0, newComment);
+  }
+
+  void handleSubscriber(dynamic data) {
+    totalChannelSubscribersCount.value = data['totalChannelSubscribersCount'];
+    isSubscribed.value = data['isSubscribed'];
   }
 
   void handleReaction(dynamic data) {
@@ -433,6 +548,23 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
       isDislike.value = false;
       isLike.value = false;
     }
+  }
+
+  bool isLikedByUser(String commentId, String userId) {
+    final likesData = commentLikesCache[commentId];
+    print(likesData);
+    if (likesData != null && likesData['likedBy'] != null) {
+      return likesData['likedBy'].contains(userId);
+    }
+    return false;
+  }
+
+  bool isDislikedByUser(String commentId, String userId) {
+    final likesData = commentLikesCache[commentId];
+    if (likesData != null && likesData['disLikedBy'] != null) {
+      return likesData['disLikedBy'].contains(userId);
+    }
+    return false;
   }
 
   bool hasLikedVideo(LikesVideo video) {
@@ -464,6 +596,14 @@ final commentLikesCache = <String, Map<String, dynamic>>{}.obs;
           .removeListener(SocketEventEnum.ADDED_DISLIKE, handleReaction);
       reactiveSocketService.socketService.value!
           .removeListener(SocketEventEnum.REMOVE_REACTION, handleReaction);
+      reactiveSocketService.socketService.value!
+          .removeListener(SocketEventEnum.ADD_SUBSCRIBER, handleSubscriber);
+      reactiveSocketService.socketService.value!
+          .removeListener(SocketEventEnum.COMMENT_LIKE, handleCommentReaction);
+      reactiveSocketService.socketService.value!.removeListener(
+          SocketEventEnum.COMMENT_DISLIKE, handleCommentReaction);
+      reactiveSocketService.socketService.value!.removeListener(
+          SocketEventEnum.REMOVE_COMMENT_REACTION, handleCommentReaction);
     }
   }
 }
