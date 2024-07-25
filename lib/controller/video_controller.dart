@@ -186,7 +186,6 @@ class VideoController extends GetxController {
       );
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
-        print({"object", response.body});
         video.value = Video.fromJson(jsonData['data']);
       } else {
         errorMessage('Failed to load video');
@@ -240,8 +239,9 @@ class VideoController extends GetxController {
 
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
+        print({"object", jsonData});
         totalChannelSubscribersCount.value =
-            jsonData['data']['totalSubscribedCount'];
+            jsonData['data']['totalChannelSubscribersCount'];
             isSubscribed.value = jsonData['data']['isSubscribed'];
       } else {
         errorMessage('Failed to load fetch subscriber');
@@ -269,6 +269,7 @@ class VideoController extends GetxController {
             jsonData['data']['totalChannelSubscribersCount'];
         isSubscribed.value = jsonData['data']['isSubscribed'];
       } else {
+        print({json.decode(response.body)});
         errorMessage('Failed to load fetch subscriber');
       }
     } catch (e) {
@@ -521,7 +522,7 @@ class VideoController extends GetxController {
   }
 
   void handleSubscriber(dynamic data) {
-    print({"object", data});
+    print({"socket object", data});
     totalChannelSubscribersCount.value = data['totalChannelSubscribersCount'];
     isSubscribed.value = data['isSubscribed'];
   }

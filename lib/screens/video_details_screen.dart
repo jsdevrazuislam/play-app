@@ -166,9 +166,11 @@ class VideoDetailsScreen extends StatelessWidget {
                   ),
                   ElevatedButton(
                       onPressed: () {
-                        videoController.toggleSubscriber(
-                            videoController.video.value.owner?.sId, videoController.videoId.value);
-                      },
+                         if (userController.accessToken != '') {
+                           videoController.toggleSubscriber(videoController.video.value.owner?.sId, videoController.videoId.value);
+                         } else
+                            _dialogBuilder(context);
+                        },
                       child: Obx(() => Text(
                         videoController.isSubscribed.value ? 'Unsubscribe' : 'Subscribe'
                       ))),
